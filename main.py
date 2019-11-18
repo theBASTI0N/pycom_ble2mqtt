@@ -81,6 +81,23 @@ def led_flash(colour):
         utime.sleep(0.1)
         pycom.rgbled(0x000000)  # Black
 
+#inspired from https://github.com/Scrin/RuuviCollector
+def dewPoint(temperature, relativeHumidity):
+    v = math.log(relativeHumidity / 100 * equilibriumVaporPressure(temperature) / 611.2)
+    return -243.5 * v / (v - 17.67)
+
+#inspired from https://github.com/Scrin/RuuviCollector
+def absoluteHumidity(temperature, relativeHumidity):
+    return equilibriumVaporPressure(temperature) * relativeHumidity * 0.021674 / (273.15 + temperature)
+
+#inspired from https://github.com/Scrin/RuuviCollector
+def equilibriumVaporPressure(temperature):
+    return 611.2 * math.exp(17.67 * temperature / (243.5 + temperature))
+
+#inspired from https://github.com/Scrin/RuuviCollector
+def airDensity(temperature, relativeHumidity, pressure):
+    return 1.2929 * 273.15 / (temperature + 273.15) * (pressure - 0.3783 * relativeHumidity / 100 * equilibriumVaporPressure(temperature)) / 101300
+
 def twos_complement(hexstr,bits):
      value = int(hexstr,16)
      if value & (1 << (bits-1)):
@@ -110,6 +127,10 @@ def decode(mac, data):
         power_bin = bin(ustruct.unpack('!H', data[15:17])[0])
         battery_voltage = (int(power_bin[:11], 2) + 1600) /1000
         tx_power = int(power_bin[11:], 2) * 2 - 40
+        aH = absoluteHumidity(temperature, humidity)
+        dP = dewPoint(temperature, humidity)
+        airD = airDensity(temperature, humidity, pressure)
+
         dc = {  'f' : format,
                 'temp' : temperature,
                 'humidity' : humidity,
@@ -117,7 +138,14 @@ def decode(mac, data):
                 'tAcc' : totalACC,
                 'pressure' : pressure,
                 'battery' : battery_voltage,
-                'tx' : tx_power}
+                'dewPoint' : dP,
+                'abHumidity' : aH,
+                'airDensity' : airD,
+                'tx' : tx_power,
+                'mac' : mac,
+                'data' : data
+                }
+
         return
     elif '990403' in data: #Ruuvi RAWv1
         format = 3
@@ -135,13 +163,21 @@ def decode(mac, data):
         z = twos_complement(d[20:24], 16)/1000
         totalACC = math.sqrt(x * x + y * y + z * z)
         battery_voltage = twos_complement(d[24:28], 16)/1000
+        aH = absoluteHumidity(temperature, humidity)
+        dP = dewPoint(temperature, humidity)
+        airD = airDensity(temperature, humidity, pressure)
         dc = {  'f' : format,
                 'temp' : temperature,
                 'humidity' : humidity,
                 'x' : x, 'y' :y, 'z' : z,
                 'tAcc' : totalACC,
                 'pressure' : pressure,
-                'battery' : battery_voltage}
+                'battery' : battery_voltage,
+                'dewPoint' : dP,
+                'abHumidity' : aH,
+                'airDensity' : airD,
+                'mac' : mac,
+                'data' : data}
         return
     elif 'AAFE2000' in data   :
         format = 1
@@ -153,15 +189,24 @@ def decode(mac, data):
         temperature = temp1 + temp2
         advCnt = int(d[8:12], 16)
         secCnt = int(d[12:16], 16)
+
         dc = {  'f' : format,
                 'temp' : temperature,
                 'advCnt' : advCnt,
                 'secCnt' : secCnt,
-                'battery' :battery_voltage}
+                'battery' :battery_voltage,
+                'mac' : mac,
+                'data' : data
+                }
 
         return
     else:
-        dc = {  'f' : format}
+
+        dc = {  'f' : format,
+                'mac' : mac,
+                'data' : data
+                }
+
         return
 
 def scan():
