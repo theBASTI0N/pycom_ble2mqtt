@@ -127,9 +127,10 @@ def decode(mac, data):
         power_bin = bin(ustruct.unpack('!H', data[15:17])[0])
         battery_voltage = (int(power_bin[:11], 2) + 1600) /1000
         tx_power = int(power_bin[11:], 2) * 2 - 40
-        aH = absoluteHumidity(temperature, humidity)
-        dP = dewPoint(temperature, humidity)
-        airD = airDensity(temperature, humidity, pressure)
+        mC = int(data[18], 8) #Need to test
+        aH = absoluteHumidity(temperature, humidity)#Need to test
+        dP = dewPoint(temperature, humidity)#Need to test
+        airD = airDensity(temperature, humidity, pressure)#Need to test
 
         dc = {  'f' : format,
                 'temp' : temperature,
@@ -138,9 +139,10 @@ def decode(mac, data):
                 'tAcc' : totalACC,
                 'pressure' : pressure,
                 'battery' : battery_voltage,
-                'dewPoint' : dP,
-                'abHumidity' : aH,
-                'airDensity' : airD,
+                'movementCounter' : mC,#Need to test
+                'dewPoint' : dP,#Need to test
+                'abHumidity' : aH,#Need to test
+                'airDensity' : airD,#Need to test
                 'tx' : tx_power,
                 'mac' : mac,
                 'data' : data
