@@ -124,13 +124,13 @@ def decode(mac, data):
         y = twos_complement(d[18:22],16)/1000
         z = twos_complement(d[22:26], 16)/1000
         totalACC = math.sqrt(x * x + y * y + z * z)
-        power_bin = bin(ustruct.unpack('!H', data[15:17])[0])
+        power_bin = bin(ustruct.unpack('!H', data[15:17])[0]) #Needs looking into
         battery_voltage = (int(power_bin[:11], 2) + 1600) /1000
         tx_power = int(power_bin[11:], 2) * 2 - 40
-        mC = int(data[18], 8) #Need to test
-        aH = absoluteHumidity(temperature, humidity)#Need to test
-        dP = dewPoint(temperature, humidity)#Need to test
-        airD = airDensity(temperature, humidity, pressure)#Need to test
+        mC = int(d[30:32], 8)
+        aH = absoluteHumidity(temperature, humidity)
+        dP = dewPoint(temperature, humidity)
+        airD = airDensity(temperature, humidity, pressure)
 
         dc = {  'f' : format,
                 'temp' : temperature,
@@ -139,10 +139,10 @@ def decode(mac, data):
                 'tAcc' : totalACC,
                 'pressure' : pressure,
                 'battery' : battery_voltage,
-                'movementCounter' : mC,#Need to test
-                'dewPoint' : dP,#Need to test
-                'abHumidity' : aH,#Need to test
-                'airDensity' : airD,#Need to test
+                'movementCounter' : mC,
+                'dewPoint' : dP,
+                'abHumidity' : aH,
+                'airDensity' : airD,
                 'tx' : tx_power,
                 'mac' : mac,
                 'data' : data
