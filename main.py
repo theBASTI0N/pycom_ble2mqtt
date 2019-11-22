@@ -124,8 +124,8 @@ def decode(mac, data):
         y = twos_complement(d[18:22],16)/1000
         z = twos_complement(d[22:26], 16)/1000
         totalACC = math.sqrt(x * x + y * y + z * z)
-        power_bin = bin(ustruct.unpack('!H', data[15:17])[0]) #Needs looking into
-        battery_voltage = (int(power_bin[:11], 2) + 1600) /1000
+        power_bin = bin(int(d[26:30], 16))
+        battery_voltage = ((int(power_bin[:11], 2)) + 1600) / 1000
         tx_power = int(power_bin[11:], 2) * 2 - 40
         mC = int(d[30:32], 8)
         aH = absoluteHumidity(temperature, humidity)
