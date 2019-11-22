@@ -121,13 +121,14 @@ def decode(mac, data):
         pressure = int(d[10:14], 16) + 50000
         pressure = pressure / 100
         x = twos_complement(d[14:18], 16)/1000
-        y = twos_complement(d[18:22],16)/1000
+        y = twos_complement(d[18:22], 16)/1000
         z = twos_complement(d[22:26], 16)/1000
         totalACC = math.sqrt(x * x + y * y + z * z)
         power_bin = bin(int(d[26:30], 16))
         battery_voltage = ((int(power_bin[:11], 2)) + 1600) / 1000
         tx_power = int(power_bin[11:], 2) * 2 - 40
         mC = int(d[30:32], 8)
+        measureSeq = int(d[32:36], 16)
         aH = absoluteHumidity(temperature, humidity)
         dP = dewPoint(temperature, humidity)
         airD = airDensity(temperature, humidity, pressure)
@@ -140,6 +141,7 @@ def decode(mac, data):
                 'pressure' : pressure,
                 'battery' : battery_voltage,
                 'movementCounter' : mC,
+                'measurementSequence' : measureSeq,
                 'dewPoint' : dP,
                 'abHumidity' : aH,
                 'airDensity' : airD,
