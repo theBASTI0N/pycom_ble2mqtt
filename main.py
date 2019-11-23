@@ -4,7 +4,6 @@ from binascii import hexlify
 import machine
 from machine import Pin
 from machine import RTC
-#import math
 import utime
 import ujson
 import pycom
@@ -12,7 +11,6 @@ from bleDecoder import decode
 import _thread
 from config import CONFIGhome as CONFIG
 import gc
-#import ustruct
 import uos
 import ssl
 
@@ -113,22 +111,18 @@ def scan():
                                     if mFen == True:
                                         for i in mF:
                                             if str.upper(i) == m:
-                                                #decode(m, data)
                                                 msgJson = ujson.dumps( decode(m, data) )
                                                 client.publish( topic=tc, msg = msgJson)
                                     else:
-                                        decode(m, data)
                                         msgJson = ujson.dumps( dMSG )
                                         client.publish( topic=tc, msg = msgJson)
                             else:
                                 if mFen == True:
                                         for i in mF:
                                             if str.upper(i) == m:
-                                                #decode(m, data)
                                                 msgJson = ujson.dumps( decode(m, data) )
                                                 client.publish( topic=tc, msg = msgJson)
                                 else:
-                                    #decode(m, data )
                                     msgJson = ujson.dumps( decode(m, data) )
                                     client.publish( topic=tc, msg = msgJson)
             #Needed as smaller boards run out of memory easily eg SiPy, WiPy2 etc

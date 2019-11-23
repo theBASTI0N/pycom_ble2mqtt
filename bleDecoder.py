@@ -30,7 +30,7 @@ def rshift(val, n):
 def decode(mac, data):
     global format
     format = 0
-    if '990405' in data['data']: #Ruuvi RAWv2
+    if '990405' in data['data']:
         format = 5
         d = str(data['data'])
         d = d[14:]
@@ -43,8 +43,8 @@ def decode(mac, data):
         z = twos_complement(d[22:26], 16)/1000
         totalACC = math.sqrt(x * x + y * y + z * z)
         power_bin = bin(int(d[26:30], 16))
-        battery_voltage = ((int(power_bin[:11], 2)) + 1600) / 1000
-        tx_power = int(power_bin[11:], 2) * 2 - 40
+        battery_voltage = ((int(power_bin[:13], 2)) + 1600) / 1000
+        tx_power = int(power_bin[13:], 2) * 2 - 40
         mC = int(d[30:32], 16)
         measureSeq = int(d[32:36], 16)
         aH = absoluteHumidity(temperature, humidity)
