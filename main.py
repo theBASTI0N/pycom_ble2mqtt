@@ -4,14 +4,15 @@ from binascii import hexlify
 import machine
 from machine import Pin
 from machine import RTC
-import math
+#import math
 import utime
 import ujson
 import pycom
+from bleDecoder import decode
 import _thread
 from config import CONFIGhome as CONFIG
 import gc
-import ustruct
+#import ustruct
 import uos
 import ssl
 
@@ -81,138 +82,6 @@ def led_flash(colour):
         utime.sleep(0.1)
         pycom.rgbled(0x000000)  # Black
 
-#inspired from https://github.com/Scrin/RuuviCollector
-def dewPoint(temperature, relativeHumidity):
-    v = math.log(relativeHumidity / 100 * equilibriumVaporPressure(temperature) / 611.2)
-    return -243.5 * v / (v - 17.67)
-
-#inspired from https://github.com/Scrin/RuuviCollector
-def absoluteHumidity(temperature, relativeHumidity):
-    return equilibriumVaporPressure(temperature) * relativeHumidity * 0.021674 / (273.15 + temperature)
-
-#inspired from https://github.com/Scrin/RuuviCollector
-def equilibriumVaporPressure(temperature):
-    return 611.2 * math.exp(17.67 * temperature / (243.5 + temperature))
-
-#inspired from https://github.com/Scrin/RuuviCollector
-def airDensity(temperature, relativeHumidity, pressure):
-    return 1.2929 * 273.15 / (temperature + 273.15) * (pressure - 0.3783 * relativeHumidity / 100 * equilibriumVaporPressure(temperature)) / 101300
-
-def twos_complement(hexstr,bits):
-     value = int(hexstr,16)
-     if value & (1 << (bits-1)):
-         value -= 1 << bits
-     return value
-
-def rshift(val, n):
-    return (val % 0x100000000) >> n
-
-def decode(mac, data):
-    global dc
-    dc= {}
-    global format
-    format = 0
-    if '990405' in data: #Ruuvi RAWv2
-        format = 5
-        d = str(data)
-        d = d[14:]
-        temperature = twos_complement(d[2:6], 16) * 0.005
-        humidity = int(d[6:10], 16) * 0.0025
-        pressure = int(d[10:14], 16) + 50000
-        pressure = pressure / 100
-        x = twos_complement(d[14:18], 16)/1000
-        y = twos_complement(d[18:22], 16)/1000
-        z = twos_complement(d[22:26], 16)/1000
-        totalACC = math.sqrt(x * x + y * y + z * z)
-        power_bin = bin(int(d[26:30], 16))
-        battery_voltage = ((int(power_bin[:11], 2)) + 1600) / 1000
-        tx_power = int(power_bin[11:], 2) * 2 - 40
-        mC = int(d[30:32], 8)
-        measureSeq = int(d[32:36], 16)
-        aH = absoluteHumidity(temperature, humidity)
-        dP = dewPoint(temperature, humidity)
-        airD = airDensity(temperature, humidity, pressure)
-
-        dc = {  'f' : format,
-                'temp' : temperature,
-                'humidity' : humidity,
-                'x' : x, 'y' :y, 'z' : z,
-                'tAcc' : totalACC,
-                'pressure' : pressure,
-                'battery' : battery_voltage,
-                'movementCounter' : mC,
-                'measurementSequence' : measureSeq,
-                'dewPoint' : dP,
-                'abHumidity' : aH,
-                'airDensity' : airD,
-                'tx' : tx_power,
-                'mac' : mac,
-                'data' : data
-                }
-
-        return
-    elif '990403' in data: #Ruuvi RAWv1
-        format = 3
-        d = str(data)
-        d = d[14:]
-        humidity = int(d[2:4], 16) * 0.5
-        temperature = twos_complement(d[4:6], 16) + int(d[6:8], 16) / 100
-        if temperature > 128:
-            temperature -= 128
-            temperature = round(0 - temperature, 2)
-        pressure = int(d[8:12], 16) + 50000
-        pressure = pressure / 100
-        x = twos_complement(d[12:16], 16)/1000
-        y = twos_complement(d[16:20],16)/1000
-        z = twos_complement(d[20:24], 16)/1000
-        totalACC = math.sqrt(x * x + y * y + z * z)
-        battery_voltage = twos_complement(d[24:28], 16)/1000
-        aH = absoluteHumidity(temperature, humidity)
-        dP = dewPoint(temperature, humidity)
-        airD = airDensity(temperature, humidity, pressure)
-        dc = {  'f' : format,
-                'temp' : temperature,
-                'humidity' : humidity,
-                'x' : x, 'y' :y, 'z' : z,
-                'tAcc' : totalACC,
-                'pressure' : pressure,
-                'battery' : battery_voltage,
-                'dewPoint' : dP,
-                'abHumidity' : aH,
-                'airDensity' : airD,
-                'mac' : mac,
-                'data' : data}
-        return
-    elif 'AAFE2000' in data   :
-        format = 1
-        d = str(data)
-        d = d[26:]
-        battery_voltage = int(d[1:4], 16) / 1000
-        temp1= twos_complement(d[4:6], 8)
-        temp2 = int(d[6:8], 16) / 256
-        temperature = temp1 + temp2
-        advCnt = int(d[8:12], 16)
-        secCnt = int(d[12:16], 16)
-
-        dc = {  'f' : format,
-                'temp' : temperature,
-                'advCnt' : advCnt,
-                'secCnt' : secCnt,
-                'battery' :battery_voltage,
-                'mac' : mac,
-                'data' : data
-                }
-
-        return
-    else:
-
-        dc = {  'f' : format,
-                'mac' : mac,
-                'data' : data
-                }
-
-        return
-
 def scan():
     while True:
         devices = {}
@@ -222,18 +91,19 @@ def scan():
                 flT= time_stamp()
                 for adv in advs:
                     devices[ hexlify( adv.mac ) ] = {
-                                        'edgeMAC' : MAC,
+                                        #'edgeMAC' : MAC,
                                         'ts' : flT,
-                                        'Mac': hexlify( adv.mac ).upper(),
-                                        'Rssi': adv.rssi,
-                                        'Data': hexlify(adv.data).decode().upper()
+                                        'edgeMAC' : MAC,
+                                        'mac': hexlify( adv.mac ).upper(),
+                                        'rssi': adv.rssi,
+                                        'data': hexlify(adv.data).decode().upper()
                                                     }
                 for key, data in devices.items():
-                            m = str(data['Mac'])
+                            dMSG = {}
+                            m = str(data['mac'])
                             m = m[2:-1]
-                            dc2 = {}
-                            dc2.update(data)
-                            r = int(data["Rssi"])
+                            tc =TOPIC + str.upper(m)
+                            r = int(data["rssi"])
                             mFen = CONFIG.get('macFilterEn')
                             mF = CONFIG.get('macFilter')
                             RSSIen = CONFIG.get('rssiEn')
@@ -243,61 +113,32 @@ def scan():
                                     if mFen == True:
                                         for i in mF:
                                             if str.upper(i) == m:
-                                                tc =TOPIC + str.upper(m)
-                                                decode(m, data['Data'])
-                                                if format >= 1:
-                                                    dc2.update(dc)
-                                                    msgJson = ujson.dumps( dc2 )
-                                                    client.publish( topic=tc, msg = msgJson)
-                                                else:
-                                                    dc2.update(dc)
-                                                    msgJson = ujson.dumps( dc2 )
-                                                    client.publish( topic=tc, msg = msgJson)
+                                                #decode(m, data)
+                                                msgJson = ujson.dumps( decode(m, data) )
+                                                client.publish( topic=tc, msg = msgJson)
                                     else:
-                                        tc =TOPIC + str.upper(m)
-                                        decode(m, data['Data'])
-                                        if format >= 1:
-                                            dc2.update(dc)
-                                            msgJson = ujson.dumps( dc2 )
-                                            client.publish( topic=tc, msg = msgJson)
-                                        else:
-                                            dc2.update(dc)
-                                            msgJson = ujson.dumps( dc2 )
-                                            client.publish( topic=tc, msg = msgJson)
+                                        decode(m, data)
+                                        msgJson = ujson.dumps( dMSG )
+                                        client.publish( topic=tc, msg = msgJson)
                             else:
                                 if mFen == True:
                                         for i in mF:
                                             if str.upper(i) == m:
-                                                tc =TOPIC + str.upper(m)
-                                                decode(m, data['Data'])
-                                                if format >= 1:
-                                                    dc2.update(dc)
-                                                    msgJson = ujson.dumps( dc2 )
-                                                    client.publish( topic=tc, msg = msgJson)
-                                                else:
-                                                    dc2.update(dc)
-                                                    msgJson = ujson.dumps( dc2 )
-                                                    client.publish( topic=tc, msg = msgJson)
+                                                #decode(m, data)
+                                                msgJson = ujson.dumps( decode(m, data) )
+                                                client.publish( topic=tc, msg = msgJson)
                                 else:
-                                    tc =TOPIC + str.upper(m)
-                                    decode(m, data['Data'])
-                                    if format >= 1:
-                                        dc2.update(dc)
-                                        msgJson = ujson.dumps( dc2 )
-                                        client.publish( topic=tc, msg = msgJson)
-                                    else:
-                                        dc2.update(dc)
-                                        msgJson = ujson.dumps( dc2 )
-                                        client.publish( topic=tc, msg = msgJson)
+                                    #decode(m, data )
+                                    msgJson = ujson.dumps( decode(m, data) )
+                                    client.publish( topic=tc, msg = msgJson)
             #Needed as smaller boards run out of memory easily eg SiPy, WiPy2 etc
             except MemoryError:
                 gc.collect()
                 led_flash('yellow')
             #If another error is caused board restarts so scanning will begin again
-            except:
-                print("Unknown error. Performing restart")
-                machine.reset()
-
+            #except:
+                #print("Unknown error. Performing restart")
+                #machine.reset()
 
 def sub_cb(topic, msg):
     t = str(topic)
