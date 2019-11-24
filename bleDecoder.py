@@ -67,7 +67,7 @@ def decode(mac, data):
                 'abHumidity' : aH,
                 'airDensity' : airD,
                 'tx' : tx_power,
-                'mac' : mac,
+                'Mac' : mac,
                 'data' : data['data']
                 }
 
@@ -104,7 +104,7 @@ def decode(mac, data):
                 'dewPoint' : dP,
                 'abHumidity' : aH,
                 'airDensity' : airD,
-                'mac' : mac,
+                'Mac' : mac,
                 'data' : data['data']
                 }
         return dMSG
@@ -127,7 +127,7 @@ def decode(mac, data):
                 'advCnt' : advCnt,
                 'secCnt' : secCnt,
                 'battery' :battery_voltage,
-                'mac' : mac,
+                'Mac' : mac,
                 'data' : data['data']
                 }
 
@@ -138,7 +138,7 @@ def decode(mac, data):
                 'rssi' : data['rssi'],
                 'ts' : data['ts'],
                 'edgeMAC' : data['edgeMAC'],
-                'mac' : mac,
+                'Mac' : mac,
                 'data' : data['data']
                 }
 
