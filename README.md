@@ -41,7 +41,7 @@ This application supports publishing these advertisements over MQTT.
 
   {"x": 0.024, "z": 1.008, "f": 5, "temp": 26.14,
     "ts": "2019-11-17T02:39:31.261467Z", "Mac": "E20B1593499E", "edgeMAC": "3C71BF877D48",
-    "battery": 2.025, "Rssi": -86, "y": 0.012, "tAcc": 1.008357, "pressure": 1018.39,
+    "battery": 2.025, "rssi": -86, "y": 0.012, "tAcc": 1.008357, "pressure": 1018.39,
     "tx": -6, "humidity": 57.1375,
     "Data": "0201061BFF990405146C5947CA7F0018000C03F0A4B4B02D06E20B1593499E03190000020A000D09436F72655461675F3439396500000000000000000000"}
 
@@ -1308,7 +1308,7 @@ https://grafana.com/docs/features/datasources/influxdb/
             [
               {
                 "params": [
-                  "Rssi"
+                  "rssi"
                 ],
                 "type": "field"
               },
@@ -1818,7 +1818,7 @@ https://grafana.com/docs/features/datasources/influxdb/
             [
               {
                 "params": [
-                  "Rssi"
+                  "rssi"
                 ],
                 "type": "field"
               },
@@ -1998,7 +1998,7 @@ https://grafana.com/docs/features/datasources/influxdb/
             [
               {
                 "params": [
-                  "Rssi"
+                  "rssi"
                 ],
                 "type": "field"
               },
