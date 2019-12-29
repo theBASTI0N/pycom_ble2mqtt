@@ -21,10 +21,14 @@ global CONNECTING
 CONNECTING = 1
 global CONNECTED
 CONNECTED = 2
+release =uos.uname().release
 global board
 board = uos.uname().sysname
 global MAC
-MAC=str.upper(hexlify(WLAN().mac(),).decode())
+if release[:4] == '1.20':
+    MAC= str.upper(hexlify(machine.unique_id(),).decode())
+else:
+    MAC=str.upper(hexlify(WLAN().mac(),).decode())
 rtc = RTC()
 
 global ROOT_CA
