@@ -31,6 +31,12 @@ else:
     MAC=str.upper(hexlify(WLAN().mac(),).decode())
 rtc = RTC()
 
+global last_ble_message
+global last_heart_message
+
+last_ble_message = 0
+last_heart_message = 0
+
 global ROOT_CA
 ROOT_CA = '/flash/cert/ca.pem'
 global CLIENT_CERT
@@ -117,18 +123,22 @@ def scan():
                                             if str.upper(i) == m:
                                                 msgJson = ujson.dumps( decode(m, data) )
                                                 client.publish( topic=tc, msg = msgJson)
+                                                last_ble_message = flT
                                     else:
                                         msgJson = ujson.dumps( dMSG )
                                         client.publish( topic=tc, msg = msgJson)
+                                        last_ble_message = flT
                             else:
                                 if mFen == True:
                                         for i in mF:
                                             if str.upper(i) == m:
                                                 msgJson = ujson.dumps( decode(m, data) )
                                                 client.publish( topic=tc, msg = msgJson)
+                                                last_ble_message = flT
                                 else:
                                     msgJson = ujson.dumps( decode(m, data) )
                                     client.publish( topic=tc, msg = msgJson)
+                                    last_ble_message = flT
             #Needed as smaller boards run out of memory easily eg SiPy, WiPy2 etc
             except MemoryError:
                 gc.collect()
@@ -188,6 +198,7 @@ def heartbeat():
                 'ip' : ip}
             msgJson = ujson.dumps(m)
             client2.publish( topic=TOPIC + "device/heartbeat", msg =msgJson )
+            last_heart_message = flT
             led_flash('green')
             utime.sleep(0.7)
             utime.sleep(29)
@@ -259,37 +270,11 @@ def set_rtc():
         machine.idle()
     print("OK")
 
-def mqtt3():#Comms Channel
-    isSSL = CONFIG.get('ssl')
-    isUSR = CONFIG.get('usr')
-    state = DISCONNECTED
-    global client3
-    if isSSL == True and isUSR == True:
-        client3 = MQTTClient( MAC + "C", CONFIG.get('host') ,user=CONFIG.get('user'), password=CONFIG.get('pass'), port=CONFIG.get('port'), keepalive=10,ssl=CONFIG.get('ssl'), ssl_params= {'cert_reqs':ssl.CERT_REQUIRED, 'ca_certs':ROOT_CA, 'certfile':CLIENT_CERT, 'keyfile': PRIVATE_KEY})
-        client3.set_callback( sub_cb )
-    elif isSSL == False and isUSR == True:
-        client3 = MQTTClient( MAC + "C", CONFIG.get('host') ,user=CONFIG.get('user'), password=CONFIG.get('pass'), port=CONFIG.get('port'), keepalive=10, ssl=CONFIG.get('ssl'))
-        client3.set_callback( sub_cb )
-    else:
-        client3 = MQTTClient( MAC + "C", CONFIG.get('host') ,user="", password="", port=CONFIG.get('port'), keepalive=10, ssl=CONFIG.get('ssl'))
-        client3.set_callback( sub_cb )
-    while state != CONNECTED:
-        try:
-            state = CONNECTING
-            client3.connect()
-            state = CONNECTED
-        except:
-            print('Could not establish MQTT-H connection')
-            utime.sleep(0.5)
-    if state == CONNECTED:
-        client3.subscribe( topic=TOPIC + "comms/#" )
-        print('MQTT-C Connected')
-
-def WAIT():
+def running_check():
     print("Waiting for Message")
     while True:
         try:
-            client3.wait_msg() #Checks for incoming messages
+            
         except:
             print("Unknown error. Performing restart")
             machine.reset()
@@ -301,7 +286,6 @@ def main():
         set_rtc() #Set RTC time
         mqtt1() #Connect Heatcheck Client
         mqtt2() #Conenct BLE Client
-        mqtt3() #Connect Comms Channel Clilnet
         _thread.start_new_thread(heartbeat, ()) #Start HeartBeat loop
         print("Scanning... from: " + MAC) #Prints device MAC
         print(TOPIC) #Prints BLE data Topic
@@ -314,8 +298,7 @@ def main():
         bt.start_scan( -1 ) #Start Scanning for BLE data indefinitely
         _thread.start_new_thread(scan, ()) #Start BLE decode loop
         print("Scanning....")
-        WAIT() #Start wait loop, checks for incoming messages
-        print("WiFi loast Restarting....")
+        running_check() #Start wait loop, checks for incoming messages
         machine.reset() #Should never get this ppoint
 
 main()
