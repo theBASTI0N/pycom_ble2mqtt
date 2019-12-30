@@ -31,11 +31,7 @@ else:
     MAC=str.upper(hexlify(WLAN().mac(),).decode())
 rtc = RTC()
 
-global last_ble_message
-global last_heart_message
 
-last_ble_message = 0
-last_heart_message = 0
 
 global ROOT_CA
 ROOT_CA = '/flash/cert/ca.pem'
@@ -91,6 +87,7 @@ def led_flash(colour):
         pycom.rgbled(0x000000)  # Black
 
 def scan():
+    global last_ble_message
     while True:
         devices = {}
         advs = bt.get_advertisements()
@@ -123,22 +120,22 @@ def scan():
                                             if str.upper(i) == m:
                                                 msgJson = ujson.dumps( decode(m, data) )
                                                 client.publish( topic=tc, msg = msgJson)
-                                                last_ble_message = flT
+                                                last_ble_message = utime.ticks_ms() / 1000 / 60
                                     else:
                                         msgJson = ujson.dumps( dMSG )
                                         client.publish( topic=tc, msg = msgJson)
-                                        last_ble_message = flT
+                                        last_ble_message = utime.ticks_ms() / 1000 / 60
                             else:
                                 if mFen == True:
                                         for i in mF:
                                             if str.upper(i) == m:
                                                 msgJson = ujson.dumps( decode(m, data) )
                                                 client.publish( topic=tc, msg = msgJson)
-                                                last_ble_message = flT
+                                                last_ble_message = utime.ticks_ms() / 1000 / 60
                                 else:
                                     msgJson = ujson.dumps( decode(m, data) )
                                     client.publish( topic=tc, msg = msgJson)
-                                    last_ble_message = flT
+                                    last_ble_message = utime.ticks_ms() / 1000 / 60
             #Needed as smaller boards run out of memory easily eg SiPy, WiPy2 etc
             except MemoryError:
                 gc.collect()
@@ -183,6 +180,7 @@ def mqtt1():#HeartBeat Client
         print('MQTT-H Connected')
 
 def heartbeat():
+    global last_heart_message
     while True:
         try:
             gc.collect()
@@ -198,7 +196,7 @@ def heartbeat():
                 'ip' : ip}
             msgJson = ujson.dumps(m)
             client2.publish( topic=TOPIC + "device/heartbeat", msg =msgJson )
-            last_heart_message = flT
+            last_heart_message = utime.ticks_ms() / 1000 / 60
             led_flash('green')
             utime.sleep(0.7)
             utime.sleep(29)
@@ -274,7 +272,12 @@ def running_check():
     print("Waiting for Message")
     while True:
         try:
-            
+           utime.sleep(10)
+           flT= utime.ticks_ms() / 1000 / 60
+           last_ble = flT - last_ble_message
+           last_heart = flT - last_heart_message
+           if last_ble >= 2 or last_heart >= 2:
+               machine.reset()
         except:
             print("Unknown error. Performing restart")
             machine.reset()
