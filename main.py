@@ -7,7 +7,7 @@ from machine import RTC
 import utime
 import ujson
 import pycom
-from bleDecoder import decode
+from beacondecoder import decode
 import _thread
 from config import CONFIGhome as CONFIG
 import gc

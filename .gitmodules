@@ -1,0 +1,3 @@
+[submodule "lib/beacondecoder"]
+	path = lib/beacondecoder
+	url = https://github.com/theBASTI0N/beacondecoder_src
